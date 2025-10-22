@@ -2,11 +2,11 @@
 /**
  * Common functions class for Featured Image with URL.
  *
- * @link       http://dpsmedia.com/
+ * @link       http://harikrut.com/
  * @since      1.0.0
  *
- * @package    DPSFIWU
- * @subpackage DPSFIWU/includes
+ * @package    HARIKRUTFIWU
+ * @subpackage HARIKRUTFIWU/includes
  */
 
 // Exit if accessed directly.
@@ -19,55 +19,40 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since      1.0.0
  */
-class DPSFIWU_Common {
+class HARIKRUTFIWU_Common {
 	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
 	 */
 	public function __construct() {
-		// Check if WooCommerce is active
-		if ( ! class_exists( 'WooCommerce' ) ) {
-			return;
-		}
 
-		// Check for WooCommerce HPOS compatibility
-		$hpos_enabled = false;
-		if ( function_exists( 'wc_get_container_page' ) ) {
-			$hpos_enabled = wc_get_container_page() !== null;
-		}
-
-		// Add HPOS compatibility filter if enabled
-		if ( $hpos_enabled ) {
-			add_filter( 'woocommerce_hpos_admin_get_feature_compatibility', array( $this, 'add_hpos_compatibility' ), 10, 2 );
-		}
-
-		add_filter( 'post_thumbnail_html', array( $this, 'dpsfiwu_overwrite_thumbnail_with_url' ), 999, 5 );
-		add_filter( 'woocommerce_structured_data_product', array( $this, 'dpsfiwu_woo_structured_data_product_support' ), 99, 2 );
-		add_filter( 'facebook_for_woocommerce_integration_prepare_product', array( $this, 'dpsfiwu_facebook_for_woocommerce_support' ), 99, 2 );
-		add_filter( 'shopzio_product_image_from_id', array( $this, 'dpsfiwu_shopzio_product_image_url' ), 10, 2 );
+		add_filter( 'post_thumbnail_html', array( $this, 'harikrutfiwu_overwrite_thumbnail_with_url' ), 999, 5 );
+		add_filter( 'woocommerce_structured_data_product', array( $this, 'harikrutfiwu_woo_structured_data_product_support' ), 99, 2 );
+		add_filter( 'facebook_for_woocommerce_integration_prepare_product', array( $this, 'harikrutfiwu_facebook_for_woocommerce_support' ), 99, 2 );
+		add_filter( 'shopzio_product_image_from_id', array( $this, 'harikrutfiwu_shopzio_product_image_url' ), 10, 2 );
 
 		if ( ! is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
-			add_action( 'init', array( $this, 'dpsfiwu_set_thumbnail_id_true' ) );
-			add_filter( 'wp_get_attachment_image_src', array( $this, 'dpsfiwu_replace_attachment_image_src' ), 10, 4 );
-			add_filter( 'woocommerce_product_get_gallery_image_ids', array( $this, 'dpsfiwu_set_customized_gallary_ids' ), 99, 2 );
+			add_action( 'init', array( $this, 'harikrutfiwu_set_thumbnail_id_true' ) );
+			add_filter( 'wp_get_attachment_image_src', array( $this, 'harikrutfiwu_replace_attachment_image_src' ), 10, 4 );
+			add_filter( 'woocommerce_product_get_gallery_image_ids', array( $this, 'harikrutfiwu_set_customized_gallary_ids' ), 99, 2 );
 
 			// Product Variation image Support.
-			add_filter( 'woocommerce_available_variation', array( $this, 'dpsfiwu_woocommerce_available_variation' ), 99, 3 );
+			add_filter( 'woocommerce_available_variation', array( $this, 'harikrutfiwu_woocommerce_available_variation' ), 99, 3 );
 		}
 
 		// Add WooCommerce Product listable Thumbnail Support for Woo 3.5 or greater.
-		add_action( 'admin_init', array( $this, 'dpsfiwu_woo_thumb_support' ) );
+		add_action( 'admin_init', array( $this, 'harikrutfiwu_woo_thumb_support' ) );
 
-		$options       = get_option( DPSFIWU_OPTIONS );
-		$resize_images = isset( $options['dpsfiwu_resize_images'] ) ? $options['dpsfiwu_resize_images'] : false;
+		$options       = get_option( HARIKRUTFIWU_OPTIONS );
+		$resize_images = isset( $options['harikrutfiwu_resize_images'] ) ? $options['harikrutfiwu_resize_images'] : false;
 		if ( ! $resize_images ) {
-			add_filter( 'dpsfiwu_user_resized_images', '__return_false' );
+			add_filter( 'harikrutfiwu_user_resized_images', '__return_false' );
 		}
 
 		// Fix the issue of images not appearing.
 		// Solved here : https://wordpress.org/support/topic/doesnt-work-with-woocommerce-3-6-0/#post-11490338.
-		add_filter( 'woocommerce_product_get_image_id', array( $this, 'dpsfiwu_woocommerce_36_support' ), 99, 2 );
+		add_filter( 'woocommerce_product_get_image_id', array( $this, 'harikrutfiwu_woocommerce_36_support' ), 99, 2 );
 	}
 
 	/**
@@ -78,12 +63,12 @@ class DPSFIWU_Common {
 	 * @param object $product WC Product.
 	 * @return value
 	 */
-	public function dpsfiwu_woocommerce_36_support( $value, $product ) {
-		global $dpsfiwu;
+	public function harikrutfiwu_woocommerce_36_support( $value, $product ) {
+		global $harikrutfiwu;
 		$product_id = $product->get_id();
-		if ( ! empty( $product_id ) && ! empty( $dpsfiwu ) ) {
+		if ( ! empty( $product_id ) && ! empty( $harikrutfiwu ) ) {
 			$post_type  = get_post_type( $product_id );
-			$image_data = $dpsfiwu->admin->dpsfiwu_get_image_meta( $product_id );
+			$image_data = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $product_id );
 			if ( isset( $image_data['img_url'] ) && ! empty( $image_data['img_url'] ) ) {
 				return $product_id;
 			}
@@ -97,10 +82,10 @@ class DPSFIWU_Common {
 	 * @since 1.0
 	 * @return void
 	 */
-	public function dpsfiwu_set_thumbnail_id_true() {
-		global $dpsfiwu;
-		foreach ( $dpsfiwu->admin->dpsfiwu_get_posttypes() as $post_type ) {
-			add_filter( "get_{$post_type}_metadata", array( $this, 'dpsfiwu_set_thumbnail_true' ), 10, 4 );
+	public function harikrutfiwu_set_thumbnail_id_true() {
+		global $harikrutfiwu;
+		foreach ( $harikrutfiwu->admin->harikrutfiwu_get_posttypes() as $post_type ) {
+			add_filter( "get_{$post_type}_metadata", array( $this, 'harikrutfiwu_set_thumbnail_true' ), 10, 4 );
 		}
 	}
 
@@ -114,15 +99,15 @@ class DPSFIWU_Common {
 	 * @since 1.0
 	 * @return mixed
 	 */
-	public function dpsfiwu_set_thumbnail_true( $value, $object_id, $meta_key, $single ) {
-		global $dpsfiwu;
+	public function harikrutfiwu_set_thumbnail_true( $value, $object_id, $meta_key, $single ) {
+		global $harikrutfiwu;
 		$post_type = get_post_type( $object_id );
-		if ( $this->dpsfiwu_is_disallow_posttype( $post_type ) ) {
+		if ( $this->harikrutfiwu_is_disallow_posttype( $post_type ) ) {
 			return $value;
 		}
 
 		if ( '_thumbnail_id' === $meta_key ) {
-			$image_data = $dpsfiwu->admin->dpsfiwu_get_image_meta( $object_id );
+			$image_data = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $object_id );
 			if ( isset( $image_data['img_url'] ) && ! empty( $image_data['img_url'] ) ) {
 				if ( 'product_variation' === $post_type ) {
 					if ( ! is_admin() ) {
@@ -148,9 +133,9 @@ class DPSFIWU_Common {
 	 * @since 1.0.0
 	 * @return string
 	 */
-	public function dpsfiwu_overwrite_thumbnail_with_url( $html, $post_id, $post_image_id, $size, $attr ) {
-		global $dpsfiwu;
-		if ( $this->dpsfiwu_is_disallow_posttype( get_post_type( $post_id ) ) ) {
+	public function harikrutfiwu_overwrite_thumbnail_with_url( $html, $post_id, $post_image_id, $size, $attr ) {
+		global $harikrutfiwu;
+		if ( $this->harikrutfiwu_is_disallow_posttype( get_post_type( $post_id ) ) ) {
 			return $html;
 		}
 
@@ -158,14 +143,14 @@ class DPSFIWU_Common {
 			return $html;
 		}
 
-		$image_data = $dpsfiwu->admin->dpsfiwu_get_image_meta( $post_id );
+		$image_data = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $post_id );
 
 		if ( ! empty( $image_data['img_url'] ) ) {
 			$image_url = $image_data['img_url'];
 
 			// Run Photon Resize Magic.
-			if ( apply_filters( 'dpsfiwu_user_resized_images', true ) ) {
-				$image_url = $this->dpsfiwu_resize_image_on_the_fly( $image_url, $size );
+			if ( apply_filters( 'harikrutfiwu_user_resized_images', true ) ) {
+				$image_url = $this->harikrutfiwu_resize_image_on_the_fly( $image_url, $size );
 			}
 
 			$image_alt = ( $image_data['img_alt'] ) ? 'alt="' . $image_data['img_alt'] . '"' : '';
@@ -187,7 +172,7 @@ class DPSFIWU_Common {
 	 *
 	 * @return string
 	 */
-	public function dpsfiwu_resize_image_on_the_fly( $image_url, $size = 'full' ) {
+	public function harikrutfiwu_resize_image_on_the_fly( $image_url, $size = 'full' ) {
 		if ( 'full' === $size || empty( $image_url ) ) {
 			return $image_url;
 		}
@@ -204,7 +189,7 @@ class DPSFIWU_Common {
 			return $image_url;
 		}
 
-		$image_size = $this->dpsfiwu_get_image_size( $size );
+		$image_size = $this->harikrutfiwu_get_image_size( $size );
 
 		if ( ! empty( $image_size ) && ! empty( $image_size['width'] ) ) {
 			$width  = (int) $image_size['width'];
@@ -248,7 +233,7 @@ class DPSFIWU_Common {
 	 * @uses   get_intermediate_image_sizes()
 	 * @return array $sizes Data for all currently-registered image sizes.
 	 */
-	public function dpsfiwu_get_image_sizes() {
+	public function harikrutfiwu_get_image_sizes() {
 		global $_wp_additional_image_sizes;
 		$sizes = array();
 		foreach ( get_intermediate_image_sizes() as $_size ) {
@@ -274,17 +259,17 @@ class DPSFIWU_Common {
 	 * @since 1.0
 	 * @return array
 	 */
-	public function dpsfiwu_get_wcgallary_meta( $post_id ) {
+	public function harikrutfiwu_get_wcgallary_meta( $post_id ) {
 		$image_meta = array();
 
-		$gallary_images = get_post_meta( $post_id, DPSFIWU_WCGALLARY, true );
+		$gallary_images = get_post_meta( $post_id, HARIKRUTFIWU_WCGALLARY, true );
 
 		// Compatibility with "Featured Image by URL" plugin.
 		if ( empty( $gallary_images ) ) {
 			$old_gallary_images = get_post_meta( $post_id, '_knawatfibu_wcgallary', true );
 			if ( ! empty( $old_gallary_images ) ) {
 				$gallary_images = $old_gallary_images;
-				update_post_meta( $post_id, DPSFIWU_WCGALLARY, $old_gallary_images );
+				update_post_meta( $post_id, HARIKRUTFIWU_WCGALLARY, $old_gallary_images );
 			}
 		}
 
@@ -303,7 +288,7 @@ class DPSFIWU_Common {
 					$gallarys[] = $gallary;
 				}
 				$gallary_images = $gallarys;
-				update_post_meta( $post_id, DPSFIWU_WCGALLARY, $gallary_images );
+				update_post_meta( $post_id, HARIKRUTFIWU_WCGALLARY, $gallary_images );
 				return $gallary_images;
 			}
 		} else {
@@ -318,7 +303,7 @@ class DPSFIWU_Common {
 					}
 				}
 				if ( $need_update ) {
-					update_post_meta( $post_id, DPSFIWU_WCGALLARY, $gallary_images );
+					update_post_meta( $post_id, HARIKRUTFIWU_WCGALLARY, $gallary_images );
 				}
 				return $gallary_images;
 			}
@@ -334,9 +319,9 @@ class DPSFIWU_Common {
 	 *
 	 * @return bool|array|string $value modified gallary ids.
 	 */
-	public function dpsfiwu_set_customized_gallary_ids( $value, $product ) {
+	public function harikrutfiwu_set_customized_gallary_ids( $value, $product ) {
 
-		if ( $this->dpsfiwu_is_disallow_posttype( 'product' ) ) {
+		if ( $this->harikrutfiwu_is_disallow_posttype( 'product' ) ) {
 			return $value;
 		}
 
@@ -344,11 +329,11 @@ class DPSFIWU_Common {
 		if ( empty( $product_id ) ) {
 			return $value;
 		}
-		$gallery_images = $this->dpsfiwu_get_wcgallary_meta( $product_id );
+		$gallery_images = $this->harikrutfiwu_get_wcgallary_meta( $product_id );
 		if ( ! empty( $gallery_images ) ) {
 			$i = 0;
 			foreach ( $gallery_images as $gallery_image ) {
-				$gallery_ids[] = '_dpsfiwu_wcgallary__' . $i . '__' . $product_id;
+				$gallery_ids[] = '_harikrutfiwu_wcgallary__' . $i . '__' . $product_id;
 				$i++;
 			}
 			return $gallery_ids;
@@ -357,7 +342,7 @@ class DPSFIWU_Common {
 	}
 
 	/**
-	 * Get image src if attachement id contains '_dpsfiwu_wcgallary' or '_dpsfiwu_fimage_url'
+	 * Get image src if attachement id contains '_harikrutfiwu_wcgallary' or '_harikrutfiwu_fimage_url'
 	 *
 	 * @uses   get_image_sizes()
 	 * @param  string $image         Image Src.
@@ -367,25 +352,25 @@ class DPSFIWU_Common {
 	 *
 	 * @return bool|array|string $image Image Src
 	 */
-	public function dpsfiwu_replace_attachment_image_src( $image, $attachment_id, $size, $icon ) {
-		global $dpsfiwu;
-		if ( false !== strpos( $attachment_id, '_dpsfiwu_wcgallary' ) ) {
+	public function harikrutfiwu_replace_attachment_image_src( $image, $attachment_id, $size, $icon ) {
+		global $harikrutfiwu;
+		if ( false !== strpos( $attachment_id, '_harikrutfiwu_wcgallary' ) ) {
 			$attachment = explode( '__', $attachment_id );
 			$image_num  = $attachment[1];
 			$product_id = $attachment[2];
 			if ( $product_id > 0 ) {
 
-				$gallery_images = $dpsfiwu->common->dpsfiwu_get_wcgallary_meta( $product_id );
+				$gallery_images = $harikrutfiwu->common->harikrutfiwu_get_wcgallary_meta( $product_id );
 				if ( ! empty( $gallery_images ) ) {
 					if ( ! isset( $gallery_images[ $image_num ]['url'] ) ) {
 						return false;
 					}
 					$url = $gallery_images[ $image_num ]['url'];
 
-					if ( apply_filters( 'dpsfiwu_user_resized_images', true ) ) {
-						$url = $dpsfiwu->common->dpsfiwu_resize_image_on_the_fly( $url, $size );
+					if ( apply_filters( 'harikrutfiwu_user_resized_images', true ) ) {
+						$url = $harikrutfiwu->common->harikrutfiwu_resize_image_on_the_fly( $url, $size );
 					}
-					$image_size = $dpsfiwu->common->dpsfiwu_get_image_size( $size );
+					$image_size = $harikrutfiwu->common->harikrutfiwu_get_image_size( $size );
 					if ( $url ) {
 						if ( $image_size ) {
 							if ( ! isset( $image_size['crop'] ) ) {
@@ -410,7 +395,7 @@ class DPSFIWU_Common {
 		}
 
 		if ( is_numeric( $attachment_id ) && $attachment_id > 0 ) {
-			$image_data = $dpsfiwu->admin->dpsfiwu_get_image_meta( $attachment_id, true );
+			$image_data = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $attachment_id, true );
 
 			if ( isset( $image_data['img_url'] ) && ! empty( $image_data['img_url'] ) ) {
 
@@ -419,11 +404,11 @@ class DPSFIWU_Common {
 				$height    = isset( $image_data['height'] ) ? $image_data['height'] : '';
 
 				// Run Photon Resize Magic.
-				if ( apply_filters( 'dpsfiwu_user_resized_images', true ) ) {
-					$image_url = $dpsfiwu->common->dpsfiwu_resize_image_on_the_fly( $image_url, $size );
+				if ( apply_filters( 'harikrutfiwu_user_resized_images', true ) ) {
+					$image_url = $harikrutfiwu->common->harikrutfiwu_resize_image_on_the_fly( $image_url, $size );
 				}
 
-				$image_size = $dpsfiwu->common->dpsfiwu_get_image_size( $size );
+				$image_size = $harikrutfiwu->common->harikrutfiwu_get_image_size( $size );
 				if ( $image_url ) {
 					if ( $image_size ) {
 						if ( ! isset( $image_size['crop'] ) ) {
@@ -455,8 +440,8 @@ class DPSFIWU_Common {
 	 * @param  string $size The image size for which to retrieve data.
 	 * @return bool|array $size Size data about an image size or false if the size doesn't exist.
 	 */
-	public function dpsfiwu_get_image_size( $size ) {
-		$sizes = $this->dpsfiwu_get_image_sizes();
+	public function harikrutfiwu_get_image_size( $size ) {
+		$sizes = $this->harikrutfiwu_get_image_sizes();
 
 		if ( is_array( $size ) ) {
 			$woo_size           = array();
@@ -477,9 +462,9 @@ class DPSFIWU_Common {
 	 * @param  string $posttype Post type.
 	 * @return bool
 	 */
-	public function dpsfiwu_is_disallow_posttype( $posttype ) {
-		$options            = get_option( DPSFIWU_OPTIONS );
-		$disabled_posttypes = isset( $options['dpsfiwu_disabled_posttypes'] ) ? $options['dpsfiwu_disabled_posttypes'] : array();
+	public function harikrutfiwu_is_disallow_posttype( $posttype ) {
+		$options            = get_option( HARIKRUTFIWU_OPTIONS );
+		$disabled_posttypes = isset( $options['harikrutfiwu_disabled_posttypes'] ) ? $options['harikrutfiwu_disabled_posttypes'] : array();
 
 		return in_array( $posttype, $disabled_posttypes, true );
 	}
@@ -490,12 +475,12 @@ class DPSFIWU_Common {
 	 * @since 1.0
 	 * @return void
 	 */
-	public function dpsfiwu_woo_thumb_support() {
+	public function harikrutfiwu_woo_thumb_support() {
 		global $pagenow;
 		if ( 'edit.php' === $pagenow ) {
 			global $typenow;
 			if ( 'product' === $typenow && isset( $_GET['post_type'] ) && 'product' === sanitize_text_field( wp_unslash( $_GET['post_type'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				add_filter( 'wp_get_attachment_image_src', array( $this, 'dpsfiwu_replace_attachment_image_src' ), 10, 4 );
+				add_filter( 'wp_get_attachment_image_src', array( $this, 'harikrutfiwu_replace_attachment_image_src' ), 10, 4 );
 			}
 		}
 	}
@@ -508,12 +493,12 @@ class DPSFIWU_Common {
 	 * @param object $product WC Product.
 	 * @return array $markup
 	 */
-	public function dpsfiwu_woo_structured_data_product_support( $markup, $product ) {
+	public function harikrutfiwu_woo_structured_data_product_support( $markup, $product ) {
 		if ( isset( $markup['image'] ) && empty( $markup['image'] ) ) {
-			global $dpsfiwu;
+			global $harikrutfiwu;
 			$product_id = $product->get_id();
-			if ( ! $this->dpsfiwu_is_disallow_posttype( 'product' ) && $product_id > 0 ) {
-				$image_data = $dpsfiwu->admin->dpsfiwu_get_image_meta( $product_id );
+			if ( ! $this->harikrutfiwu_is_disallow_posttype( 'product' ) && $product_id > 0 ) {
+				$image_data = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $product_id );
 				if ( ! empty( $image_data ) && isset( $image_data['img_url'] ) && ! empty( $image_data['img_url'] ) ) {
 					$markup['image'] = $image_data['img_url'];
 				}
@@ -529,14 +514,14 @@ class DPSFIWU_Common {
 	 * @param int   $product_id   Product ID.
 	 * @return array $product_data Altered product data for Facebook feed.
 	 */
-	public function dpsfiwu_facebook_for_woocommerce_support( $product_data, $product_id ) {
+	public function harikrutfiwu_facebook_for_woocommerce_support( $product_data, $product_id ) {
 		if ( empty( $product_data ) || empty( $product_id ) ) {
 			return $product_data;
 		}
 
-		global $dpsfiwu;
+		global $harikrutfiwu;
 		// Product Image.
-		$product_image = $dpsfiwu->admin->dpsfiwu_get_image_meta( $product_id );
+		$product_image = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $product_id );
 		if ( isset( $product_image['img_url'] ) && ! empty( $product_image['img_url'] ) ) {
 			$product_data['image_url'] = $product_image['img_url'];
 			$image_override            = get_post_meta( $product_id, 'fb_product_image', true );
@@ -546,7 +531,7 @@ class DPSFIWU_Common {
 		}
 
 		// Product Gallery Images.
-		$product_gallery_images = $dpsfiwu->common->dpsfiwu_get_wcgallary_meta( $product_id );
+		$product_gallery_images = $harikrutfiwu->common->harikrutfiwu_get_wcgallary_meta( $product_id );
 		if ( ! empty( $product_gallery_images ) ) {
 			$gallery_images = array();
 			foreach ( $product_gallery_images as $wc_gimage ) {
@@ -570,12 +555,12 @@ class DPSFIWU_Common {
 	 * @param string       $attachment_id  Attachment ID.
 	 * @return string|array Altered Image.
 	 */
-	public function dpsfiwu_shopzio_product_image_url( $image, $attachment_id ) {
+	public function harikrutfiwu_shopzio_product_image_url( $image, $attachment_id ) {
 		if ( empty( $attachment_id ) || ! empty( $image ) ) {
 			return $image;
 		}
 
-		$image_data = $this->dpsfiwu_replace_attachment_image_src( $image, $attachment_id, 'full', false );
+		$image_data = $this->harikrutfiwu_replace_attachment_image_src( $image, $attachment_id, 'full', false );
 		if ( ! empty( $image_data ) && isset( $image_data[0] ) && ! empty( $image_data[0] ) ) {
 			$image = $image_data[0];
 		}
@@ -592,15 +577,15 @@ class DPSFIWU_Common {
 	 * @param object $variation        WC Product Variation.
 	 * @return array $value
 	 */
-	public function dpsfiwu_woocommerce_available_variation( $value, $variable_product, $variation ) {
+	public function harikrutfiwu_woocommerce_available_variation( $value, $variable_product, $variation ) {
 		$variation_id = $variation->get_id();
 		if ( empty( $variation_id ) ) {
 			return $value;
 		}
 
-		global $dpsfiwu;
+		global $harikrutfiwu;
 		// Product Variation Image.
-		$variation_image = $dpsfiwu->admin->dpsfiwu_get_image_meta( $variation_id, true );
+		$variation_image = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $variation_id, true );
 		if ( isset( $variation_image['img_url'] ) && ! empty( $variation_image['img_url'] ) && isset( $value['image'] ) ) {
 			$image_url = $variation_image['img_url'];
 			$width     = ( isset( $variation_image['width'] ) && ! empty( $variation_image['width'] ) ) ? $variation_image['width'] : '';
@@ -628,31 +613,6 @@ class DPSFIWU_Common {
 			$value['image']['src_h'] = $height;
 		}
 		return $value;
-	}
-
-	/**
-	 * Add HPOS compatibility for features.
-	 *
-	 * @since 1.0.0
-	 * @param array $compatibility Features compatibility array.
-	 * @param string $feature Feature identifier.
-	 * @return array Modified compatibility array.
-	 */
-	public function add_hpos_compatibility( $compatibility, $feature ) {
-		// Make our plugin compatible with HPOS
-		$hpos_compatible_features = array(
-			'custom_order_tables' => true,
-			'product_block_editor' => true,
-			'product_variation_management' => true,
-			'analytics' => true,
-			'marketing' => true,
-		);
-
-		if ( in_array( $feature, array_keys( $hpos_compatible_features ) ) ) {
-			$compatibility[ $feature ] = true;
-		}
-
-		return $compatibility;
 	}
 
 	/**

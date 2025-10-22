@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name:       Featured Image with URL
- * Plugin URI:        https://github.com/hienhoceo-dpsmedia/featured-image-with-url
- * Description:       This plugin allows to use an external URL Images as Featured Image for your post types. Includes support for Product Gallery (WooCommerce) with enhanced SEO optimization.
- * Version:           1.0.0
- * Author:            DPS.MEDIA JSC
- * Author URI:        https://dps.media/
+ * Plugin URI:        https://wordpress.org/plugins/featured-image-with-url/
+ * Description:       This plugin allows to use an external URL Images as Featured Image for your post types. Includes support for Product Gallery (WooCommerce).
+ * Version:           1.0.3
+ * Author:            Harikrut Technolab
+ * Author URI:        https://www.harikrut.com/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       featured-image-with-url
@@ -15,7 +15,7 @@
  * Tested up to:      6.7
  *
  * @package     HARIKRUTFIWU
- * @author      DPS.MEDIA JSC <support@dps.media>
+ * @author      Harikrut Technolab <harikruttech@gmail.com>
  */
 
 // If this file is called directly, abort.
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 // Plugin version.
 if ( ! defined( 'HARIKRUTFIWU_VERSION' ) ) {
-	define( 'HARIKRUTFIWU_VERSION', '1.0.0' );
+	define( 'HARIKRUTFIWU_VERSION', '1.0.3' );
 }
 
 // Plugin folder Path.

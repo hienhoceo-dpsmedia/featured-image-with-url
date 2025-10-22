@@ -320,6 +320,11 @@ class DPSFIWU_Admin {
 			$image_meta['img_url'] = $img_url;
 		}
 		$image_meta['img_alt'] = $img_alt;
+
+		// Get OG title and description for backward compatibility
+		$image_meta['og_title'] = get_post_meta( $post_id, '_dpsfiwu_og_title', true );
+		$image_meta['og_description'] = get_post_meta( $post_id, '_dpsfiwu_og_description', true );
+
 		if ( ( 'product_variation' === get_post_type( $post_id ) || 'product' === get_post_type( $post_id ) ) && $is_single_page ) {
 			if ( isset( $img_url['width'] ) ) {
 				$image_meta['width']  = $img_url['width'];
@@ -331,6 +336,9 @@ class DPSFIWU_Admin {
 						'img_url' => $image_meta['img_url'],
 						'width'   => isset( $imagesize[0] ) ? $imagesize[0] : '',
 						'height'  => isset( $imagesize[1] ) ? $imagesize[1] : '',
+						'img_alt' => $image_meta['img_alt'],
+						'og_title' => $image_meta['og_title'],
+						'og_description' => $image_meta['og_description'],
 					);
 					update_post_meta( $post_id, $this->image_meta_url, $image_url );
 					$image_meta = $image_url;
@@ -436,13 +444,13 @@ class DPSFIWU_Admin {
 		);
 
 		add_settings_field(
-			'dpsfiwu_enable_schema',
+			'harikrutfiwu_enable_schema',
 			__( 'Enable Enhanced Schema.org', 'dpsfiwu' ),
 			array( $this, 'enable_schema_callback' ),
 			'dpsfiwu',
 			'dpsfiwu_seo_section',
 			array(
-				'label_for' => 'dpsfiwu_enable_schema',
+				'label_for' => 'harikrutfiwu_enable_schema',
 				'class'     => 'dpsfiwu_row',
 			)
 		);
@@ -611,14 +619,14 @@ class DPSFIWU_Admin {
 	 */
 	public function enable_schema_callback( $args ) {
 		$options        = get_option( DPSFIWU_OPTIONS );
-		$enable_schema  = isset( $options['dpsfiwu_enable_schema'] ) ? $options['dpsfiwu_enable_schema'] : true;
+		$enable_schema  = isset( $options['harikrutfiwu_enable_schema'] ) ? $options['harikrutfiwu_enable_schema'] : true;
 		?>
-		<label for="dpsfiwu_enable_schema">
+		<label for="harikrutfiwu_enable_schema">
 			<input
 				name="<?php echo esc_attr( DPSFIWU_OPTIONS . '[' . $args['label_for'] . ']' ); ?>"
 				type="checkbox"
 				value="1"
-				id="dpsfiwu_enable_schema"
+				id="harikrutfiwu_enable_schema"
 				<?php checked( $enable_schema, 1 ); ?>
 			/>
 			<?php esc_html_e( 'Enable enhanced Schema.org structured data for external images', 'dpsfiwu' ); ?>

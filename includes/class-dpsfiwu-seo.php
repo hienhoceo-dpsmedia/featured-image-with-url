@@ -24,13 +24,13 @@ class DPSFIWU_SEO {
 	/**
 	 * Initialize the class and set its properties.
 	 *
-	 * @since    1.0.4
+	 * @since    1.0.0
 	 */
 	public function __construct() {
 		$options = get_option( DPSFIWU_OPTIONS );
 
 		// Schema.org structured data filters
-		if ( ! isset( $options['dpsfiwu_enable_schema'] ) || $options['dpsfiwu_enable_schema'] ) {
+		if ( ! isset( $options['harikrutfiwu_enable_schema'] ) || $options['harikrutfiwu_enable_schema'] ) {
 			add_filter( 'woocommerce_structured_data_product', array( $this, 'enhance_product_schema' ), 100, 2 );
 			add_filter( 'wpseo_schema_graph', array( $this, 'add_image_schema_to_wpseo' ), 11, 1 );
 			add_action( 'wp_head', array( $this, 'add_custom_schema_markup' ), 5 );

@@ -48,6 +48,13 @@ if ( ! class_exists( 'DPSFIWU' ) ) :
 		public $seo;
 
 		/**
+		 * Migration Instance.
+		 *
+		 * @var DPSFIWU_Migration $migration
+		 */
+		public $migration;
+
+		/**
 		 * Main Featured Image with URL Instance.
 		 *
 		 * Insure that only one instance of DPSFIWU exists in memory at any one time.
@@ -69,6 +76,7 @@ if ( ! class_exists( 'DPSFIWU' ) ) :
 				add_filter( 'plugin_row_meta', array( self::$instance, 'plugin_row_meta' ), 10, 2 );
 
 				self::$instance->includes();
+				self::$instance->migration = new DPSFIWU_Migration();
 				self::$instance->admin  = new DPSFIWU_Admin();
 				self::$instance->common = new DPSFIWU_Common();
 				self::$instance->seo    = new DPSFIWU_SEO();
@@ -116,6 +124,7 @@ if ( ! class_exists( 'DPSFIWU' ) ) :
 		 * @return void
 		 */
 		private function includes() {
+			require_once DPSFIWU_PLUGIN_DIR . 'includes/class-dpsfiwu-migration.php';
 			require_once DPSFIWU_PLUGIN_DIR . 'includes/class-dpsfiwu-admin.php';
 			require_once DPSFIWU_PLUGIN_DIR . 'includes/class-dpsfiwu-common.php';
 			require_once DPSFIWU_PLUGIN_DIR . 'includes/class-dpsfiwu-seo.php';

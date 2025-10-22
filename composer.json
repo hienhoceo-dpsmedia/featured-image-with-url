@@ -1,0 +1,34 @@
+{
+	"name": "hienhoceo-dpsmedia/featured-image-with-url",
+	"description": "This plugin allows to use an external URL Images as Featured Image for your post types. Includes support for Product Gallery (WooCommerce). Enhanced with SEO and social media features by DPS.MEDIA.",
+	"type": "wordpress-plugin",
+	"keywords": ["wordpress", "featured-image", "seo", "social-media", "woocommerce"],
+	"homepage": "https://dps.media",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "DPS.MEDIA JSC",
+			"email": "marketing@dps.media",
+			"homepage": "https://dps.media",
+			"role": "Developer"
+		}
+	],
+	"require-dev": {
+		"wp-coding-standards/wpcs": "^2.2",
+		"dealerdirect/phpcodesniffer-composer-installer": "^0.7",
+		"10up/phpcs-composer": "dev-master"
+	},
+	"scripts": {
+		"phpcs": "vendor/bin/phpcs",
+		"lint-fix": "./vendor/bin/phpcbf --standard=phpcs.xml"
+	},
+	"minimum-stability": "dev",
+	"config": {
+		"platform": {
+			"php": "7.4"
+		},
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

@@ -26,6 +26,21 @@ class DPSFIWU_Common {
 	 * @since    1.0.0
 	 */
 	public function __construct() {
+		// Check if WooCommerce is active
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return;
+		}
+
+		// Check for WooCommerce HPOS compatibility
+		$hpos_enabled = false;
+		if ( function_exists( 'wc_get_container_page' ) ) {
+			$hpos_enabled = wc_get_container_page() !== null;
+		}
+
+		// Add HPOS compatibility filter if enabled
+		if ( $hpos_enabled ) {
+			add_filter( 'woocommerce_hpos_admin_get_feature_compatibility', array( $this, 'add_hpos_compatibility' ), 10, 2 );
+		}
 
 		add_filter( 'post_thumbnail_html', array( $this, 'dpsfiwu_overwrite_thumbnail_with_url' ), 999, 5 );
 		add_filter( 'woocommerce_structured_data_product', array( $this, 'dpsfiwu_woo_structured_data_product_support' ), 99, 2 );
@@ -613,6 +628,31 @@ class DPSFIWU_Common {
 			$value['image']['src_h'] = $height;
 		}
 		return $value;
+	}
+
+	/**
+	 * Add HPOS compatibility for features.
+	 *
+	 * @since 1.0.0
+	 * @param array $compatibility Features compatibility array.
+	 * @param string $feature Feature identifier.
+	 * @return array Modified compatibility array.
+	 */
+	public function add_hpos_compatibility( $compatibility, $feature ) {
+		// Make our plugin compatible with HPOS
+		$hpos_compatible_features = array(
+			'custom_order_tables' => true,
+			'product_block_editor' => true,
+			'product_variation_management' => true,
+			'analytics' => true,
+			'marketing' => true,
+		);
+
+		if ( in_array( $feature, array_keys( $hpos_compatible_features ) ) ) {
+			$compatibility[ $feature ] = true;
+		}
+
+		return $compatibility;
 	}
 
 	/**

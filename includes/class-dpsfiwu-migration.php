@@ -35,8 +35,24 @@ class DPSFIWU_Migration {
 	 * @since    1.0.0
 	 */
 	public function __construct() {
-		add_action( 'admin_init', array( $this, 'check_for_migration' ) );
+		// Run migration on plugins_loaded to ensure all plugins are loaded
+		add_action( 'plugins_loaded', array( $this, 'check_for_migration' ), 20 );
 		add_action( 'admin_notices', array( $this, 'show_migration_notice' ) );
+		add_action( 'admin_init', array( $this, 'force_migration_check' ), 1 );
+
+		// Add a manual trigger for testing (remove in production)
+		add_action( 'admin_init', array( $this, 'manual_migration_trigger' ) );
+	}
+
+	/**
+	 * Force migration check on admin_init for reliability.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function force_migration_check() {
+		// Also check during admin_init for more reliable migration
+		$this->check_for_migration();
 	}
 
 	/**
@@ -47,10 +63,21 @@ class DPSFIWU_Migration {
 	 */
 	public function check_for_migration() {
 		$last_migration = get_option( 'dpsfiwu_last_migration', '0.0.0' );
+		$current_version = get_option( 'dpsfiwu_current_version', '0.0.0' );
 
-		if ( version_compare( $last_migration, $this->migration_version, '<' ) ) {
+		// Debug logging
+		error_log( '[DPSFIWU Migration] Checking for migration...' );
+		error_log( '[DPSFIWU Migration] Last migration: ' . $last_migration );
+		error_log( '[DPSFIWU Migration] Current version: ' . $current_version );
+
+		// Always check for migration on plugin activation/update
+		if ( version_compare( $last_migration, $this->migration_version, '<' ) || version_compare( $current_version, '1.0.0', '<' ) ) {
+			error_log( '[DPSFIWU Migration] Migration needed - running migration...' );
 			$this->run_migration();
 			update_option( 'dpsfiwu_last_migration', $this->migration_version );
+			update_option( 'dpsfiwu_current_version', '1.0.0' );
+		} else {
+			error_log( '[DPSFIWU Migration] No migration needed' );
 		}
 	}
 
@@ -61,6 +88,8 @@ class DPSFIWU_Migration {
 	 * @return void
 	 */
 	private function run_migration() {
+		error_log( '[DPSFIWU Migration] Starting migration process...' );
+
 		$this->migrate_post_meta();
 		$this->migrate_options();
 		$this->migrate_from_knawatfibu();
@@ -68,6 +97,8 @@ class DPSFIWU_Migration {
 		// Store migration info for admin notice
 		update_option( 'dpsfiwu_migration_needed', true );
 		update_option( 'dpsfiwu_migration_date', current_time( 'mysql' ) );
+
+		error_log( '[DPSFIWU Migration] Migration process completed' );
 	}
 
 	/**
@@ -77,12 +108,22 @@ class DPSFIWU_Migration {
 	 * @return void
 	 */
 	private function migrate_post_meta() {
+		error_log( '[DPSFIWU Migration] Starting post meta migration...' );
+
 		$args = array(
 			'post_type' => 'any',
 			'posts_per_page' => -1,
 			'fields' => 'ids',
 			'meta_query' => array(
 				'relation' => 'OR',
+				array(
+					'key' => '_harikrutfiwu_url',
+					'compare' => 'EXISTS',
+				),
+				array(
+					'key' => '_harikrutfiwu_wcgallary',
+					'compare' => 'EXISTS',
+				),
 				array(
 					'key' => '_dpsfiwu_url',
 					'compare' => 'EXISTS',
@@ -91,22 +132,30 @@ class DPSFIWU_Migration {
 					'key' => '_knawatfibu_url',
 					'compare' => 'EXISTS',
 				),
+				array(
+					'key' => '_knawatfibu_wcgallary',
+					'compare' => 'EXISTS',
+				),
 			),
 		);
 
 		$query = new WP_Query( $args );
 		$migrated_count = 0;
 
+		error_log( '[DPSFIWU Migration] Found ' . $query->found_posts . ' posts with old plugin data' );
+
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {
 				$migrated = $this->migrate_post_data( $post_id );
 				if ( $migrated ) {
 					$migrated_count++;
+					error_log( '[DPSFIWU Migration] Successfully migrated post ID: ' . $post_id );
 				}
 			}
 		}
 
 		update_option( 'dpsfiwu_migrated_posts_count', $migrated_count );
+		error_log( '[DPSFIWU Migration] Post meta migration completed. Migrated ' . $migrated_count . ' posts.' );
 	}
 
 	/**
@@ -119,27 +168,36 @@ class DPSFIWU_Migration {
 	private function migrate_post_data( $post_id ) {
 		$migrated = false;
 
-		// Get old Harikrut plugin data
-		$old_url = get_post_meta( $post_id, '_dpsfiwu_url', true );
-		$old_alt = get_post_meta( $post_id, '_dpsfiwu_alt', true );
-		$old_og_title = get_post_meta( $post_id, '_dpsfiwu_og_title', true );
-		$old_og_description = get_post_meta( $post_id, '_dpsfiwu_og_description', true );
+		// Get old Harikrut plugin data (note: using old meta keys)
+		$old_url = get_post_meta( $post_id, '_harikrutfiwu_url', true );
+		$old_alt = get_post_meta( $post_id, '_harikrutfiwu_alt', true );
+		$old_og_title = get_post_meta( $post_id, '_harikrutfiwu_og_title', true );
+		$old_og_description = get_post_meta( $post_id, '_harikrutfiwu_og_description', true );
+
+		error_log( '[DPSFIWU Migration] Checking post ID ' . $post_id . ' for old plugin data' );
+		error_log( '[DPSFIWU Migration] Found old URL: ' . ( $old_url ? 'YES' : 'NO' ) );
 
 		// Check if we need to migrate from Harikrut plugin
 		if ( $old_url && ! get_post_meta( $post_id, '_dpsfiwu_url', true ) ) {
+			error_log( '[DPSFIWU Migration] Migrating post ID ' . $post_id . ' from Harikrut plugin' );
+
 			// Migrate to new DPS.MEDIA meta keys
 			update_post_meta( $post_id, '_dpsfiwu_url', $old_url );
+			error_log( '[DPSFIWU Migration] Migrated URL for post ' . $post_id . ': ' . $old_url );
 
 			if ( $old_alt ) {
 				update_post_meta( $post_id, '_dpsfiwu_alt', $old_alt );
+				error_log( '[DPSFIWU Migration] Migrated ALT for post ' . $post_id . ': ' . $old_alt );
 			}
 
 			if ( $old_og_title ) {
 				update_post_meta( $post_id, '_dpsfiwu_og_title', $old_og_title );
+				error_log( '[DPSFIWU Migration] Migrated OG title for post ' . $post_id . ': ' . $old_og_title );
 			}
 
 			if ( $old_og_description ) {
 				update_post_meta( $post_id, '_dpsfiwu_og_description', $old_og_description );
+				error_log( '[DPSFIWU Migration] Migrated OG description for post ' . $post_id );
 			}
 
 			$migrated = true;
@@ -158,16 +216,18 @@ class DPSFIWU_Migration {
 			$migrated = true;
 		}
 
-		// Migrate gallery data
-		$old_gallery = get_post_meta( $post_id, '_dpsfiwu_wcgallary', true );
+		// Migrate gallery data from Harikrut plugin
+		$old_gallery = get_post_meta( $post_id, '_harikrutfiwu_wcgallary', true );
 		if ( $old_gallery && ! get_post_meta( $post_id, '_dpsfiwu_wcgallary', true ) ) {
 			update_post_meta( $post_id, '_dpsfiwu_wcgallary', $old_gallery );
+			error_log( '[DPSFIWU Migration] Migrated gallery for post ' . $post_id );
 			$migrated = true;
 		}
 
 		$knawat_gallery = get_post_meta( $post_id, '_knawatfibu_wcgallary', true );
 		if ( $knawat_gallery && ! get_post_meta( $post_id, '_dpsfiwu_wcgallary', true ) ) {
 			update_post_meta( $post_id, '_dpsfiwu_wcgallary', $knawat_gallery );
+			error_log( '[DPSFIWU Migration] Migrated Knawat gallery for post ' . $post_id );
 			$migrated = true;
 		}
 
@@ -181,15 +241,21 @@ class DPSFIWU_Migration {
 	 * @return void
 	 */
 	private function migrate_options() {
+		error_log( '[DPSFIWU Migration] Starting options migration...' );
+
 		// Get old options
 		$old_options = get_option( 'harikrutfiwu_options', array() );
 		$new_options = get_option( 'dpsfiwu_options', array() );
+
+		error_log( '[DPSFIWU Migration] Found ' . count( $old_options ) . ' old plugin options' );
 
 		// Merge old options with new defaults
 		$migrated_options = wp_parse_args( $new_options, $old_options );
 
 		// Update new options
 		update_option( 'dpsfiwu_options', $migrated_options );
+
+		error_log( '[DPSFIWU Migration] Options migration completed' );
 	}
 
 	/**
@@ -247,6 +313,29 @@ class DPSFIWU_Migration {
 
 		// Clear the notice after displaying once
 		update_option( 'dpsfiwu_migration_needed', false );
+	}
+
+	/**
+	 * Manual migration trigger for testing.
+	 * Trigger migration when URL parameter ?dpsfiwu_force_migration=1 is present.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function manual_migration_trigger() {
+		if ( isset( $_GET['dpsfiwu_force_migration'] ) && $_GET['dpsfiwu_force_migration'] == '1' && current_user_can( 'manage_options' ) ) {
+			// Reset migration options to force re-run
+			delete_option( 'dpsfiwu_last_migration' );
+			delete_option( 'dpsfiwu_current_version' );
+
+			// Force migration to run
+			$this->check_for_migration();
+
+			// Add admin notice
+			add_action( 'admin_notices', function() {
+				echo '<div class="notice notice-success"><p><strong>DPSFIWU Migration:</strong> Manual migration triggered. Check debug.log for details.</p></div>';
+			});
+		}
 	}
 
 	/**

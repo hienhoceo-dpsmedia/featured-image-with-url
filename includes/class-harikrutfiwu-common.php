@@ -39,6 +39,9 @@ class HARIKRUTFIWU_Common {
 
 			// Product Variation image Support.
 			add_filter( 'woocommerce_available_variation', array( $this, 'harikrutfiwu_woocommerce_available_variation' ), 99, 3 );
+
+			// Ensure alt attributes for external images rendered via wp_get_attachment_image.
+			add_filter( 'wp_get_attachment_image_attributes', array( $this, 'harikrutfiwu_fill_alt_for_external_images' ), 999, 3 );
 		}
 
 		// Add WooCommerce Product listable Thumbnail Support for Woo 3.5 or greater.
@@ -153,14 +156,98 @@ class HARIKRUTFIWU_Common {
 				$image_url = $this->harikrutfiwu_resize_image_on_the_fly( $image_url, $size );
 			}
 
-			$image_alt = ( $image_data['img_alt'] ) ? 'alt="' . $image_data['img_alt'] . '"' : '';
+			// Build alt attribute: saved alt -> post/product title.
+			$image_alt_text = '';
+			if ( ! empty( $image_data['img_alt'] ) ) {
+				$image_alt_text = $image_data['img_alt'];
+			} else {
+				$title          = get_the_title( $post_id );
+				$image_alt_text = is_string( $title ) ? $title : '';
+			}
+			$image_alt = ( '' !== $image_alt_text ) ? 'alt="' . esc_attr( wp_strip_all_tags( $image_alt_text ) ) . '"' : '';
+
+			// Provide width/height when possible to reduce CLS.
+			$width  = '';
+			$height = '';
+			if ( isset( $image_data['width'], $image_data['height'] ) && $image_data['width'] && $image_data['height'] ) {
+				$width  = (int) $image_data['width'];
+				$height = (int) $image_data['height'];
+			} else {
+				$size_info = $this->harikrutfiwu_get_image_size( $size );
+				if ( is_array( $size_info ) && ! empty( $size_info['width'] ) && ! empty( $size_info['height'] ) ) {
+					$width  = (int) $size_info['width'];
+					$height = (int) $size_info['height'];
+				}
+			}
 			$classes   = 'external-img wp-post-image ';
 			$classes  .= ( isset( $attr['class'] ) ) ? $attr['class'] : '';
-			$style     = ( isset( $attr['style'] ) ) ? 'style="' . $attr['style'] . '"' : '';
+			$style     = ( isset( $attr['style'] ) ) ? 'style="' . esc_attr( $attr['style'] ) . '"' : '';
 
-			$html = sprintf( '<img src="%s" %s class="%s" %s />', $image_url, $image_alt, $classes, $style );
+			$extras = ' decoding="async" loading="lazy"';
+			if ( $width && $height ) {
+				$extras .= ' width="' . (int) $width . '" height="' . (int) $height . '"';
+			}
+
+			$html = sprintf( '<img src="%s" %s class="%s" %s%s />', esc_url( $image_url ), $image_alt, esc_attr( $classes ), $style, $extras );
 		}
 		return $html;
+	}
+
+	/**
+	 * Ensure alt attribute for images generated for external URLs (frontend/WooCommerce).
+	 *
+	 * If alt is empty and the image src matches the current post's external featured image
+	 * or one of the product gallery-by-URL images, set alt to the post/product title.
+	 *
+	 * @since 1.0.4
+	 * @param array        $attr       Attributes for the image markup.
+	 * @param WP_Post|null $attachment Attachment object or null when not available.
+	 * @param string|array $size       Requested size.
+	 * @return array                   Possibly modified attributes.
+	 */
+	public function harikrutfiwu_fill_alt_for_external_images( $attr, $attachment, $size ) {
+		if ( ! empty( $attr['alt'] ) || empty( $attr['src'] ) ) {
+			return $attr;
+		}
+
+		global $harikrutfiwu, $post;
+		$post_id = isset( $post->ID ) ? (int) $post->ID : 0;
+		if ( ! $post_id || empty( $harikrutfiwu ) ) {
+			return $attr;
+		}
+
+		$src               = $attr['src'];
+		$matches_external  = false;
+		$image_meta        = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $post_id, true );
+		$featured_img_url  = isset( $image_meta['img_url'] ) ? $image_meta['img_url'] : '';
+		$featured_img_alt  = isset( $image_meta['img_alt'] ) ? $image_meta['img_alt'] : '';
+
+		if ( $featured_img_url && $src === $featured_img_url ) {
+			$matches_external = true;
+		}
+
+		if ( ! $matches_external && 'product' === get_post_type( $post_id ) ) {
+			$gallery = $this->harikrutfiwu_get_wcgallary_meta( $post_id );
+			if ( is_array( $gallery ) ) {
+				foreach ( $gallery as $g ) {
+					if ( isset( $g['url'] ) && $src === $g['url'] ) {
+						$matches_external = true;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( ! $matches_external ) {
+			return $attr;
+		}
+
+		$alt = $featured_img_alt ? $featured_img_alt : get_the_title( $post_id );
+		if ( is_string( $alt ) && '' !== $alt ) {
+			$attr['alt'] = wp_strip_all_tags( $alt );
+		}
+
+		return $attr;
 	}
 
 	/**

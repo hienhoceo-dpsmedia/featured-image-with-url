@@ -42,6 +42,21 @@ class HARIKRUTFIWU_Common {
 
 			// Ensure alt attributes for external images rendered via wp_get_attachment_image.
 			add_filter( 'wp_get_attachment_image_attributes', array( $this, 'harikrutfiwu_fill_alt_for_external_images' ), 999, 3 );
+
+			// SEO plugins compatibility & basic OG/Twitter fallback on frontend.
+			add_filter( 'wpseo_opengraph_image', array( $this, 'harikrutfiwu_yoast_og_image' ), 999 );
+			add_filter( 'wpseo_twitter_image', array( $this, 'harikrutfiwu_yoast_twitter_image' ), 999 );
+			add_action( 'wpseo_add_opengraph_images', array( $this, 'harikrutfiwu_yoast_add_og_images' ), 999 );
+			add_filter( 'wpseo_schema_article', array( $this, 'harikrutfiwu_yoast_schema_article' ), 999, 2 );
+			add_filter( 'wpseo_schema_webpage', array( $this, 'harikrutfiwu_yoast_schema_webpage' ), 999, 2 );
+			add_filter( 'wpseo_schema_product', array( $this, 'harikrutfiwu_yoast_schema_product' ), 999, 2 );
+
+			add_filter( 'rank_math/opengraph/facebook/image', array( $this, 'harikrutfiwu_rankmath_og_image' ), 999 );
+			add_filter( 'rank_math/opengraph/twitter/image', array( $this, 'harikrutfiwu_rankmath_twitter_image' ), 999 );
+			add_filter( 'rank_math/json_ld', array( $this, 'harikrutfiwu_rankmath_json_ld' ), 999, 4 );
+
+			// Basic OG/Twitter tags when no SEO plugin is active.
+			add_action( 'wp_head', array( $this, 'harikrutfiwu_basic_og_tags' ), 5 );
 		}
 
 		// Add WooCommerce Product listable Thumbnail Support for Woo 3.5 or greater.
@@ -191,6 +206,133 @@ class HARIKRUTFIWU_Common {
 			$html = sprintf( '<img src="%s" %s class="%s" %s%s />', esc_url( $image_url ), $image_alt, esc_attr( $classes ), $style, $extras );
 		}
 		return $html;
+	}
+
+	/**
+	 * Compute SEO image URL for the current or given post.
+	 *
+	 * @since 1.0.4
+	 * @param int|null $post_id Post ID or null for current queried object.
+	 * @return string Image URL or empty string.
+	 */
+	public function harikrutfiwu_get_seo_image_url( $post_id = null ) {
+		global $harikrutfiwu;
+		if ( empty( $post_id ) ) {
+			$post_id = get_queried_object_id();
+		}
+
+		$image_url = '';
+
+		if ( ! empty( $post_id ) && ! empty( $harikrutfiwu ) ) {
+			$image_data = $harikrutfiwu->admin->harikrutfiwu_get_image_meta( $post_id, true );
+			if ( isset( $image_data['img_url'] ) && ! empty( $image_data['img_url'] ) ) {
+				$image_url = $image_data['img_url'];
+			}
+
+			// WooCommerce product: if no featured image by URL is set, try the first URL from the product gallery by URLs.
+			if ( empty( $image_url ) && 'product' === get_post_type( $post_id ) ) {
+				$gallery_images = $this->harikrutfiwu_get_wcgallary_meta( $post_id );
+				if ( ! empty( $gallery_images ) && is_array( $gallery_images ) ) {
+					$first = reset( $gallery_images );
+					if ( is_array( $first ) && ! empty( $first['url'] ) ) {
+						$image_url = $first['url'];
+					}
+				}
+			}
+		}
+
+		// Fallback to native featured image if present.
+		if ( empty( $image_url ) && ! empty( $post_id ) ) {
+			$native = get_the_post_thumbnail_url( $post_id, 'full' );
+			if ( $native ) {
+				$image_url = $native;
+			}
+		}
+
+		return esc_url_raw( $image_url );
+	}
+
+	// Yoast SEO integrations.
+	public function harikrutfiwu_yoast_og_image( $img ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		return ! empty( $url ) ? $url : $img;
+	}
+	public function harikrutfiwu_yoast_twitter_image( $img ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		return ! empty( $url ) ? $url : $img;
+	}
+	public function harikrutfiwu_yoast_add_og_images( $images ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		if ( ! empty( $url ) && is_object( $images ) && method_exists( $images, 'add_image' ) ) {
+			$images->add_image( $url );
+		}
+	}
+	public function harikrutfiwu_yoast_schema_article( $data, $context = null ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		if ( ! empty( $url ) ) {
+			$data['image'] = array( '@type' => 'ImageObject', 'url' => $url );
+		}
+		return $data;
+	}
+	public function harikrutfiwu_yoast_schema_webpage( $data, $context = null ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		if ( ! empty( $url ) ) {
+			$data['image'] = array( '@type' => 'ImageObject', 'url' => $url );
+		}
+		return $data;
+	}
+	public function harikrutfiwu_yoast_schema_product( $data, $context = null ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		if ( ! empty( $url ) ) {
+			$data['image'] = array( '@type' => 'ImageObject', 'url' => $url );
+		}
+		return $data;
+	}
+
+	// Rank Math integrations.
+	public function harikrutfiwu_rankmath_og_image( $img ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		return ! empty( $url ) ? $url : $img;
+	}
+	public function harikrutfiwu_rankmath_twitter_image( $img ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		return ! empty( $url ) ? $url : $img;
+	}
+	public function harikrutfiwu_rankmath_json_ld( $data, $jsonld, $type, $context ) {
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		if ( empty( $url ) || ! is_array( $data ) ) {
+			return $data;
+		}
+		foreach ( $data as $key => $piece ) {
+			if ( ! is_array( $piece ) ) {
+				continue;
+			}
+			$type_field = isset( $piece['@type'] ) ? $piece['@type'] : '';
+			if ( in_array( $type_field, array( 'Article', 'BlogPosting', 'NewsArticle', 'WebPage', 'Product' ), true ) ) {
+				$data[ $key ]['image'] = array( '@type' => 'ImageObject', 'url' => $url );
+			}
+		}
+		return $data;
+	}
+
+	/**
+	 * Output basic OG/Twitter tags when no SEO plugin is active.
+	 */
+	public function harikrutfiwu_basic_og_tags() {
+		if ( is_admin() || ! is_singular() ) {
+			return;
+		}
+		// Skip if Yoast or Rank Math is active to avoid duplication.
+		if ( defined( 'WPSEO_VERSION' ) || class_exists( 'WPSEO_Options' ) || defined( 'RANK_MATH_VERSION' ) || class_exists( 'RankMath' ) ) {
+			return;
+		}
+		$url = $this->harikrutfiwu_get_seo_image_url();
+		if ( empty( $url ) ) {
+			return;
+		}
+		echo '<meta property="og:image" content="' . esc_url( $url ) . '" />' . "\n";
+		echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+		echo '<meta name="twitter:image" content="' . esc_url( $url ) . '" />' . "\n";
 	}
 
 	/**
